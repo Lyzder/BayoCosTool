@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,6 +28,7 @@ namespace BayoCosTool
         private string file_name = "";
         private Cos? cos_file;
         private List<float[,]> work_values = new List<float[,]>();
+        private string decimalSeparator = System.Globalization.NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
 
         public MainWindow()
         {
@@ -217,12 +219,42 @@ namespace BayoCosTool
                     values = new float[7, 3];
                     for (i = 0; i < 7; i++)
                     {
-                        values[i, 0] = colors[i].Red;
-                        values[i, 1] = colors[i].Green;
-                        values[i, 2] = colors[i].Blue;
+                        values[i, 0] = Toggle255.IsChecked ? RGBto255(colors[i].Red) : colors[i].Red;
+                        values[i, 1] = Toggle255.IsChecked ? RGBto255(colors[i].Green) : colors[i].Green;
+                        values[i, 2] = Toggle255.IsChecked ? RGBto255(colors[i].Blue) : colors[i].Blue;
                     }
 
                     work_values.Add(values);
+                }
+            }
+        }
+
+        private void Convert_WorkValues()
+        {
+            int i;
+
+            if (Toggle255.IsChecked)
+            {
+                foreach (float[,] values in work_values)
+                {
+                    for (i = 0; i < 7; i++)
+                    {
+                        values[i, 0] = RGBto255(values[i, 0]);
+                        values[i, 1] = RGBto255(values[i, 1]);
+                        values[i, 2] = RGBto255(values[i, 2]);
+                    }
+                }
+            }
+            else
+            {
+                foreach (float[,] values in work_values)
+                {
+                    for (i = 0; i < 7; i++)
+                    {
+                        values[i, 0] = RGBtoDecimal((UInt16)Math.Round(values[i, 0]));
+                        values[i, 1] = RGBtoDecimal((UInt16)Math.Round(values[i, 1]));
+                        values[i, 2] = RGBtoDecimal((UInt16)Math.Round(values[i, 2]));
+                    }
                 }
             }
         }
@@ -285,27 +317,27 @@ namespace BayoCosTool
                 {
                     values = work_values[index];
 
-                    RedBox0.Text = string.Format("{0:N7}", values[0, 0] > 0 ? values[0, 0] : 0);
-                    RedBox1.Text = string.Format("{0:N7}", values[1, 0] > 0 ? values[1, 0] : 0);
-                    RedBox2.Text = string.Format("{0:N7}", values[2, 0] > 0 ? values[2, 0] : 0);
-                    RedBox3.Text = string.Format("{0:N7}", values[3, 0] > 0 ? values[3, 0] : 0);
-                    RedBox4.Text = string.Format("{0:N7}", values[4, 0] > 0 ? values[4, 0] : 0);
-                    RedBox5.Text = string.Format("{0:N7}", values[5, 0] > 0 ? values[5, 0] : 0);
-                    RedBox6.Text = string.Format("{0:N7}", values[6, 0] > 0 ? values[6, 0] : 0);
-                    GreenBox0.Text = string.Format("{0:N7}", values[0, 1] > 0 ? values[0, 1] : 0);
-                    GreenBox1.Text = string.Format("{0:N7}", values[1, 1] > 0 ? values[1, 1] : 0);
-                    GreenBox2.Text = string.Format("{0:N7}", values[2, 1] > 0 ? values[2, 1] : 0);
-                    GreenBox3.Text = string.Format("{0:N7}", values[3, 1] > 0 ? values[3, 1] : 0);
-                    GreenBox4.Text = string.Format("{0:N7}", values[4, 1] > 0 ? values[4, 1] : 0);
-                    GreenBox5.Text = string.Format("{0:N7}", values[5, 1] > 0 ? values[5, 1] : 0);
-                    GreenBox6.Text = string.Format("{0:N7}", values[6, 1] > 0 ? values[6, 1] : 0);
-                    BlueBox0.Text = string.Format("{0:N7}", values[0, 2] > 0 ? values[0, 2] : 0);
-                    BlueBox1.Text = string.Format("{0:N7}", values[1, 2] > 0 ? values[1, 2] : 0);
-                    BlueBox2.Text = string.Format("{0:N7}", values[2, 2] > 0 ? values[2, 2] : 0);
-                    BlueBox3.Text = string.Format("{0:N7}", values[3, 2] > 0 ? values[3, 2] : 0);
-                    BlueBox4.Text = string.Format("{0:N7}", values[4, 2] > 0 ? values[4, 2] : 0);
-                    BlueBox5.Text = string.Format("{0:N7}", values[5, 2] > 0 ? values[5, 2] : 0);
-                    BlueBox6.Text = string.Format("{0:N7}", values[6, 2] > 0 ? values[6, 2] : 0);
+                    RedBox0.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[0, 0] > 0 ? values[0, 0] : 0);
+                    RedBox1.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[1, 0] > 0 ? values[1, 0] : 0);
+                    RedBox2.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[2, 0] > 0 ? values[2, 0] : 0);
+                    RedBox3.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[3, 0] > 0 ? values[3, 0] : 0);
+                    RedBox4.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[4, 0] > 0 ? values[4, 0] : 0);
+                    RedBox5.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[5, 0] > 0 ? values[5, 0] : 0);
+                    RedBox6.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[6, 0] > 0 ? values[6, 0] : 0);
+                    GreenBox0.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[0, 1] > 0 ? values[0, 1] : 0);
+                    GreenBox1.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[1, 1] > 0 ? values[1, 1] : 0);
+                    GreenBox2.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[2, 1] > 0 ? values[2, 1] : 0);
+                    GreenBox3.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[3, 1] > 0 ? values[3, 1] : 0);
+                    GreenBox4.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[4, 1] > 0 ? values[4, 1] : 0);
+                    GreenBox5.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[5, 1] > 0 ? values[5, 1] : 0);
+                    GreenBox6.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[6, 1] > 0 ? values[6, 1] : 0);
+                    BlueBox0.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[0, 2] > 0 ? values[0, 2] : 0);
+                    BlueBox1.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[1, 2] > 0 ? values[1, 2] : 0);
+                    BlueBox2.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[2, 2] > 0 ? values[2, 2] : 0);
+                    BlueBox3.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[3, 2] > 0 ? values[3, 2] : 0);
+                    BlueBox4.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[4, 2] > 0 ? values[4, 2] : 0);
+                    BlueBox5.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[5, 2] > 0 ? values[5, 2] : 0);
+                    BlueBox6.Text = string.Format(Toggle255.IsChecked ? "{0}" : "{0:N7}", values[6, 2] > 0 ? values[6, 2] : 0);
                 }
             }
         }
@@ -387,13 +419,23 @@ namespace BayoCosTool
             return rgb;
         }
 
-        private float RGBtoDecimal(short color)
+        /// <summary>
+        /// Converts the integer value of the RGB component to its equivalent value from 0.0 to 1.0
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private float RGBtoDecimal(UInt16 color)
         {
-            float rgb = (float)Math.Pow((color / 255), 2.2);
+            float rgb = (float)Math.Pow((color / 255.0), 2.2);
 
             return rgb;
         }
 
+        /// <summary>
+        /// Gets the RGB values for an specific row in the current entry.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         private float[] GetRGB(short index)
         {
             float red, green, blue;
@@ -440,35 +482,106 @@ namespace BayoCosTool
             return new float[] { red, green, blue };
         }
 
+        /// <summary>
+        /// Updates the preview color box for an specific row in the current entry
+        /// </summary>
+        /// <param name="index"></param>
         private void UpdateColor(short index)
         {
             float[] rgb;
 
             rgb = GetRGB(index);
-            switch (index)
+            if (Toggle255.IsChecked)
             {
-                case 1:
-                    Color1.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                case 2:
-                    Color2.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                case 3:
-                    Color3.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                case 4:
-                    Color4.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                case 5:
-                    Color5.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                case 6:
-                    Color6.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
-                default:
-                    Color0.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
-                    break;
+                switch (index)
+                {
+                    case 1:
+                        Color1.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    case 2:
+                        Color2.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    case 3:
+                        Color3.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    case 4:
+                        Color4.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    case 5:
+                        Color5.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    case 6:
+                        Color6.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                    default:
+                        Color0.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        break;
+                }
             }
+            else
+            {
+                switch (index)
+                {
+                    case 1:
+                        Color1.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    case 2:
+                        Color2.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    case 3:
+                        Color3.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    case 4:
+                        Color4.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    case 5:
+                        Color5.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    case 6:
+                        Color6.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                    default:
+                        Color0.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)RGBto255(rgb[0]), (byte)RGBto255(rgb[1]), (byte)RGBto255(rgb[2])));
+                        break;
+                }
+            }
+        }
+
+        private bool IsValidNumber(TextBox textbox, string newText)
+        {
+            Regex regex = new Regex("^[0-9]+$"); // Matches digits only
+            string proposedText = textbox.Text.Insert(textbox.CaretIndex, newText);
+            if (regex.IsMatch(proposedText))
+                return IsWithinLimit(proposedText);
+            return false;
+        }
+
+        private bool IsValidDecimal(TextBox textbox, string newText)
+        {
+            Regex regex;
+            if (decimalSeparator == ".")
+                regex = new Regex(@"^\d*\.?\d*$"); // Matches digits and decimal point with a period
+            else
+                regex = new Regex(@"^\d*\,?\d*$"); // Matches digits and decimal point with a comma
+            string proposedText = textbox.Text.Insert(textbox.CaretIndex, newText);
+            if (regex.IsMatch(proposedText))
+                return IsWithinLimit(proposedText);
+            return false;
+        }
+
+        private bool IsWithinLimit(string text)
+        {
+            if (Toggle255.IsChecked)
+            {
+                if ((int.Parse(text) >= 0) && (int.Parse(text) <= 255))
+                     return true;
+            }
+            else
+            {
+                if ((float.Parse(text) >= 0) && (float.Parse(text) <= 1))
+                    return true;
+            }
+            return false;
         }
 
         private void EntriesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -480,33 +593,97 @@ namespace BayoCosTool
 
         private void TextBox0_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][0, 0] = float.Parse(RedBox0.Text);
+            work_values[EntriesComboBox.SelectedIndex][0, 1] = float.Parse(GreenBox0.Text);
+            work_values[EntriesComboBox.SelectedIndex][0, 2] = float.Parse(BlueBox0.Text);
             UpdateColor(0);
         }
 
         private void TextBox1_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][1, 0] = float.Parse(RedBox1.Text);
+            work_values[EntriesComboBox.SelectedIndex][1, 1] = float.Parse(GreenBox1.Text);
+            work_values[EntriesComboBox.SelectedIndex][1, 2] = float.Parse(BlueBox1.Text);
             UpdateColor(1);
         }
 
         private void TextBox2_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][2, 0] = float.Parse(RedBox2.Text);
+            work_values[EntriesComboBox.SelectedIndex][2, 1] = float.Parse(GreenBox2.Text);
+            work_values[EntriesComboBox.SelectedIndex][2, 2] = float.Parse(BlueBox2.Text);
             UpdateColor(2);
         }
         private void TextBox3_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][3, 0] = float.Parse(RedBox3.Text);
+            work_values[EntriesComboBox.SelectedIndex][3, 1] = float.Parse(GreenBox3.Text);
+            work_values[EntriesComboBox.SelectedIndex][3, 2] = float.Parse(BlueBox3.Text);
             UpdateColor(3);
         }
         private void TextBox4_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][4, 0] = float.Parse(RedBox4.Text);
+            work_values[EntriesComboBox.SelectedIndex][4, 1] = float.Parse(GreenBox4.Text);
+            work_values[EntriesComboBox.SelectedIndex][4, 2] = float.Parse(BlueBox4.Text);
             UpdateColor(4);
         }
         private void TextBox5_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][5, 0] = float.Parse(RedBox5.Text);
+            work_values[EntriesComboBox.SelectedIndex][5, 1] = float.Parse(GreenBox5.Text);
+            work_values[EntriesComboBox.SelectedIndex][5, 2] = float.Parse(BlueBox5.Text);
             UpdateColor(5);
         }
         private void TextBox6_KeyUP(object sender, KeyEventArgs e)
         {
+            work_values[EntriesComboBox.SelectedIndex][6, 0] = float.Parse(RedBox6.Text);
+            work_values[EntriesComboBox.SelectedIndex][6, 1] = float.Parse(GreenBox6.Text);
+            work_values[EntriesComboBox.SelectedIndex][6, 2] = float.Parse(BlueBox6.Text);
             UpdateColor(6);
+        }
+
+        private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox textbox = sender as TextBox;
+            // Checks if it's using 0 to 1 or 0 to 255
+            if (Toggle255.IsChecked)
+                e.Handled = !IsValidNumber(textbox, e.Text);
+            else
+                e.Handled = !IsValidDecimal(textbox, e.Text);
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Allow control keys like Backspace, Delete, Arrow keys, etc.
+            if (e.Key == Key.Back || e.Key == Key.Delete || e.Key == Key.Left || e.Key == Key.Right)
+            {
+                e.Handled = false;
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+
+            // Check if the TextBox is empty
+            if (string.IsNullOrEmpty(textBox.Text))
+            {
+                // Set the TextBox text to "0"
+                textBox.Text = "0";
+
+                // Move the caret to the end of the text
+                textBox.CaretIndex = textBox.Text.Length;
+            }
+        }
+
+        private void Toggle255_Checked(object sender, RoutedEventArgs e)
+        {
+            if (cos_file != null)
+            {
+                Convert_WorkValues();
+                LoadValues(EntriesComboBox.SelectedIndex);
+            }
         }
     }
 }

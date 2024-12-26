@@ -28,6 +28,9 @@
                 <Separator/>
                 <MenuItem Name="ExitBtn" Header="_Exit" Click="Exit_Click"/>
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Name="Toggle255" Header="0 to 255 scale" IsCheckable="True" Checked="Toggle255_Checked" Unchecked="Toggle255_Checked"></MenuItem>
+            </MenuItem>
         </Menu>
         <DockPanel>
             <StackPanel>
@@ -73,7 +76,7 @@
                         <Label Grid.Column="0" Grid.Row="0" Content="Red:" VerticalAlignment="Center"></Label>
                         <Label Grid.Column="1" Grid.Row="0" Content="Green:" VerticalAlignment="Center"></Label>
                         <Label Grid.Column="2" Grid.Row="0" Content="Blue:" VerticalAlignment="Center"></Label>
-                        <TextBox x:Name="RedBox0" Grid.Column="0" Grid.Row="1" Margin="5,0,5,0" IsEnabled="False" KeyUp="TextBox0_KeyUP"></TextBox>
+                        <TextBox x:Name="RedBox0" Grid.Column="0" Grid.Row="1" Margin="5,0,5,0" IsEnabled="False" KeyUp="TextBox0_KeyUP" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" TextChanged="TextBox_TextChanged"></TextBox>
                         <TextBox x:Name="GreenBox0" Grid.Column="1" Grid.Row="1" Margin="5,0,5,0" IsEnabled="False" KeyUp="TextBox0_KeyUP"></TextBox>
                         <TextBox x:Name="BlueBox0" Grid.Column="2" Grid.Row="1" Margin="5,0,5,0" IsEnabled="False" KeyUp="TextBox0_KeyUP"></TextBox>
                     </Grid>
