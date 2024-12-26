@@ -34,6 +34,16 @@ namespace BayoCosTool
             this.numEntries = numEntries;
         }
 
+        public uint GetSize()
+        {
+            return size;
+        }
+
+        public uint GetVersion()
+        {
+            return version;
+        }
+
         public uint GetOffset()
         {
             return offsetEntries;
@@ -133,7 +143,7 @@ namespace BayoCosTool
         /// </summary>
         /// <param name="header"></param>
         /// <returns></returns>
-        public CosHeader GetHeader(short index)
+        public CosHeader? GetHeader(short index)
         {
             if (index == 0)
                 return header;

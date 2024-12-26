@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -76,17 +78,44 @@ namespace BayoCosTool
 
         private void SaveCommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-
+            if (cos_file != null)
+            {
+                CopyToFile();
+                WriteFile(file_name);
+            }
         }
 
         private void SaveAsCommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
         {
+            if (cos_file != null)
+            {
+                Nullable<bool> result;
+                Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog();
+                dlg.InitialDirectory = System.IO.Path.GetDirectoryName(file_name);
+                dlg.FileName = System.IO.Path.GetFileName(file_name);
+                dlg.Filter = "Cos file (*.cos)|*.cos|All Files (*.*)|*.*";
+                dlg.RestoreDirectory = true;
 
+                result = dlg.ShowDialog();
+                // User didn't save a file so don't do anything
+                if (result == false)
+                    return;
+
+                WriteFileAs(dlg.FileName);
+                return;
+            }
         }
+
+        /// <summary>
+        /// Loads Cos file into memory.
+        /// </summary>
+        /// <param name="filename"></param>
         private void Load_Cos(string filename)
         {
             FileStream fileStream;
             EndianBinaryReader reader;
+            string? error = null;
+
             try
             {
                 using (fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read))
@@ -98,7 +127,7 @@ namespace BayoCosTool
                         if (fileStream.Length < ((UInt16)Globals.HEADER_SIZE + (UInt16)Globals.STRUCT_SIZE))
                         {
                             Console.WriteLine("The file is too short.");
-                            return;
+                            throw new Exception("The file is too short.");
                         }
 
                         Load_Header(reader);
@@ -117,14 +146,61 @@ namespace BayoCosTool
             }
             catch (FileNotFoundException)
             {
-                Console.WriteLine("The file was not found.");
+                Console.WriteLine("Error: The file was not found.");
+                error = "Unable to open file.\nThe file was not found.";
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine("Error: The specified directory was not found.");
+                error = "Unable to open file.\nThe specified directory was not found.";
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Error: You do not have permission to read this file.");
+                error = "Unable to open file.\nYou do not have permission to read this file.";
+            }
+            catch (PathTooLongException)
+            {
+                Console.WriteLine("Error: The specified file path is too long.");
+                error = "Unable to open file.\nThe specified file path is too long.";
             }
             catch (IOException ex)
             {
                 Console.WriteLine($"An I/O error occurred: {ex.Message}");
+                error = $"Unable to open file.\nAn I/O error occurred: {ex.Message}";
+            }
+            catch (NotSupportedException)
+            {
+                Console.WriteLine("Error: The file path format is invalid.");
+                error = "Unable to open file.\nThe file path format is invalid.";
+            }
+            catch (ArgumentNullException)
+            {
+                Console.WriteLine("Error: The file path cannot be null.");
+                error = "Unable to open file.\nThe file path cannot be null.";
+            }
+            catch (ArgumentException)
+            {
+                Console.WriteLine("Error: The file path contains invalid characters.");
+                error = "Unable to open file.\nThe file path contains invalid characters.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+                error = $"Unable to open file.\nAn unexpected error occurred: {ex.Message}";
+            }
+            // Shows error message if error string was assigned
+            if (!string.IsNullOrEmpty(error))
+            {
+                MessageBox.Show(error, "Open file error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+
+        /// <summary>
+        /// Loads Cos file header into memory
+        /// </summary>
+        /// <param name="reader"></param>
         private void Load_Header(EndianBinaryReader reader)
         {
             uint size;
@@ -153,6 +229,10 @@ namespace BayoCosTool
             cos_file.SetHeader2(new CosHeader(size, version, offsetEntries, numEntries));
         }
 
+        /// <summary>
+        /// Loads all Cos file entries into memory
+        /// </summary>
+        /// <param name="reader"></param>
         private void Load_Entries(EndianBinaryReader reader)
         {
             if (cos_file != null)
@@ -199,6 +279,9 @@ namespace BayoCosTool
             }
         }
 
+        /// <summary>
+        /// Loads work values into memory from Cos file in memory
+        /// </summary>
         private void Load_WorkValues()
         {
             float[,] values;
@@ -229,6 +312,9 @@ namespace BayoCosTool
             }
         }
 
+        /// <summary>
+        /// Converts work values in memory from 0.0-1.0 to 0-255, and the other way around.
+        /// </summary>
         private void Convert_WorkValues()
         {
             int i;
@@ -251,14 +337,17 @@ namespace BayoCosTool
                 {
                     for (i = 0; i < 7; i++)
                     {
-                        values[i, 0] = RGBtoDecimal((UInt16)Math.Round(values[i, 0]));
-                        values[i, 1] = RGBtoDecimal((UInt16)Math.Round(values[i, 1]));
-                        values[i, 2] = RGBtoDecimal((UInt16)Math.Round(values[i, 2]));
+                        values[i, 0] = RGBtoDecimal((ushort)Math.Round(values[i, 0]));
+                        values[i, 1] = RGBtoDecimal((ushort)Math.Round(values[i, 1]));
+                        values[i, 2] = RGBtoDecimal((ushort)Math.Round(values[i, 2]));
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Loads working values into the user interface
+        /// </summary>
         private void LoadToUI()
         {
             BindEntries();
@@ -295,6 +384,9 @@ namespace BayoCosTool
             Color6.Stroke = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 0, 0));
         }
 
+        /// <summary>
+        /// Binds entries into the combobox
+        /// </summary>
         private void BindEntries()
         {
             if (cos_file != null)
@@ -307,6 +399,10 @@ namespace BayoCosTool
             }
         }
 
+        /// <summary>
+        /// Loads the current entry's work values into the text boxes.
+        /// </summary>
+        /// <param name="index"></param>
         private void LoadValues(int index)
         {
             float[,] values;
@@ -547,6 +643,156 @@ namespace BayoCosTool
             }
         }
 
+        /// <summary>
+        /// Copies the working values into the Cos file in memory.
+        /// </summary>
+        private void CopyToFile()
+        {
+            if (cos_file != null)
+            {
+                int i, j;
+                List<CosEntry> entries;
+                CosColor[] color;
+
+                entries = cos_file.GetEntries();
+                for (i = 0; i < entries.Count; i++)
+                {
+                    color = entries[i].GetColors();
+                    for (j = 0; j < 7; j++)
+                    {
+                        // If using 255 scale, convert values before copying
+                        color[j].Red = Toggle255.IsChecked ? RGBtoDecimal((ushort)work_values[i][j, 0]) : work_values[i][j, 0];
+                        color[j].Green = Toggle255.IsChecked ? RGBtoDecimal((ushort)work_values[i][j, 1]) : work_values[i][j, 1];
+                        color[j].Blue = Toggle255.IsChecked ? RGBtoDecimal((ushort)work_values[i][j, 2]) : work_values[i][j, 2];
+                    }
+                }
+            }
+        }
+
+        private void WriteFileAs(string filename)
+        {
+            CopyToFile();
+            WriteFile(filename);
+            file_name = filename;
+            this.Title = "Bayonetta Palette Tool - " + System.IO.Path.GetFileName(filename);
+        }
+
+        private void WriteFile(string filename)
+        {
+            FileStream fileStream;
+            EndianBinaryWriter writer;
+            string? error = null;
+
+            try
+            {
+                using (fileStream = new FileStream(filename, FileMode.Create, FileAccess.Write))
+                {
+                    using (writer = new EndianBinaryWriter(fileStream))
+                    {
+                        writer.IsBigEndian = false;
+
+                        WriteHeaders(writer);
+                        WriteEntries(writer);
+                        fileStream.Close();
+
+                        MessageBox.Show("File Saved!", "Saved successfully", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Error: You do not have the required permissions to write to this file.");
+                error = "Could not save file.\nYou do not have the required permissions to write to this file.";
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine("Error: The specified directory was not found.");
+                error = "Could not save file.\nThe specified diractory was not found.";
+            }
+            catch (PathTooLongException)
+            {
+                Console.WriteLine("Error: The specified file path is too long.");
+                error = "Could not save file.\nThe specified file path is too long.";
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"Error: An I/O error occurred. Details: {ex.Message}");
+                error = $"Could not save file.\nError: An I/O error occurred: {ex.Message}";
+            }
+            catch (NotSupportedException)
+            {
+                Console.WriteLine("Error: The file path format is invalid.");
+                error = "Could not save file.\nThe file path format is invalid.";
+            }
+            catch (ArgumentNullException)
+            {
+                Console.WriteLine("Error: The file path cannot be null.");
+                error = "Could not save file.\nThe file path cannot be null";
+            }
+            catch (ArgumentException)
+            {
+                Console.WriteLine("Error: The file path contains invalid characters.");
+                error = "Could not save file.\nThe file path contains invalid characters.";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+                error = $"Could not save file.\nAn unexpected error occurred: {ex.Message}";
+            }
+            if (!string.IsNullOrEmpty(error))
+            {
+                MessageBox.Show(error, "Save file error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void WriteHeaders(EndianBinaryWriter writer)
+        {
+            CosHeader header;
+
+            header = cos_file.GetHeader(0);
+
+            writer.Write(header.GetSize());
+            writer.Write(header.GetVersion());
+            writer.Write((uint)16);
+            writer.Write(header.GetNumOfEntries());
+
+            // Checks if the file has 2 headers
+            if (cos_file.GetHeader(1) != null)
+            {
+                header = cos_file.GetHeader(1);
+
+                writer.Write(header.GetSize());
+                writer.Write(header.GetVersion());
+                writer.Write(header.GetNumOfEntries()); // Second header has number of entries before the offset
+                writer.Write((uint)16);
+            }
+
+            return;
+        }
+
+        private void WriteEntries(EndianBinaryWriter writer)
+        {
+            foreach(CosEntry entry in cos_file.GetEntries())
+            {
+                foreach(CosColor color in entry.GetColors())
+                {
+                    writer.Write(color.Red);
+                    writer.Write(color.Green);
+                    writer.Write(color.Blue);
+                }
+                foreach (sbyte name in entry.GetName())
+                    writer.Write(name);
+            }
+
+            return;
+        }
+
+        /// <summary>
+        /// Checks if the proposed text is a valid integer
+        /// </summary>
+        /// <param name="textbox"></param>
+        /// <param name="newText"></param>
+        /// <returns></returns>
         private bool IsValidNumber(TextBox textbox, string newText)
         {
             Regex regex = new Regex("^[0-9]+$"); // Matches digits only
@@ -556,6 +802,12 @@ namespace BayoCosTool
             return false;
         }
 
+        /// <summary>
+        /// Checks if the proposed text is a valid decimal
+        /// </summary>
+        /// <param name="textbox"></param>
+        /// <param name="newText"></param>
+        /// <returns></returns>
         private bool IsValidDecimal(TextBox textbox, string newText)
         {
             Regex regex;
@@ -569,6 +821,11 @@ namespace BayoCosTool
             return false;
         }
 
+        /// <summary>
+        /// Checks if the proposed number is within the valid range
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
         private bool IsWithinLimit(string text)
         {
             if (Toggle255.IsChecked)
