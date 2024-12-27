@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,7 +30,7 @@ namespace BayoCosTool
         {
             Nullable<bool> result;
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.InitialDirectory = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            dlg.InitialDirectory = System.IO.Path.GetDirectoryName(System.AppContext.BaseDirectory);
             dlg.Filter = "Cos file (*.cos)|*.cos|All Files (*.*)|*.*";
             dlg.RestoreDirectory = true;
 
