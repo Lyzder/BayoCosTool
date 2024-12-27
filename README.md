@@ -27,6 +27,7 @@ For information and download links for the .Net runtime go to their [official we
 ## Special Thanks
 
  - Kerilk for his templates that made the work so much easier, and for the tools we are still using to this day.
+ - Skyth for lending me his endian binary classes.
 
 
 ## Feedback
