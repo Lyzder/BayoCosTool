@@ -932,5 +932,10 @@ namespace BayoCosTool
                 LoadValues(EntriesComboBox.SelectedIndex);
             }
         }
+
+        private void AboutBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Bayonetta Cos Tool made by Lyzder.\nRepository: https://github.com/Lyzder/BayoCosTool\nFor modding questions, join the Infernal Warks discord server.","About");
+        }
     }
 }

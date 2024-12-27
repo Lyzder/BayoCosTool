@@ -31,6 +31,7 @@
             <MenuItem Header="_View">
                 <MenuItem Name="Toggle255" Header="0 to 255 scale" IsCheckable="True" Checked="Toggle255_Checked" Unchecked="Toggle255_Checked"></MenuItem>
             </MenuItem>
+			<MenuItem x:Name="AboutBtn" Header="About" Click="AboutBtn_Click"/>
         </Menu>
         <DockPanel>
             <StackPanel>
